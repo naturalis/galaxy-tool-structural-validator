@@ -1,0 +1,21 @@
+name: barcode_validator_structural
+owner: rvosa
+description: Validate DNA barcode sequences structurally
+long_description: |
+  This tool validates DNA barcode sequences structurally to ensure they meet quality criteria 
+  for submission to international barcode repositories like BOLD. It checks sequence length, 
+  ambiguous bases, and presence of stop codons in protein-coding regions.
+remote_repository_url: https://github.com/naturalis/galaxy-tool-structural-validator
+homepage_url: https://github.com/naturalis/galaxy-tool-structural-validator
+type: unrestricted
+categories:
+  - Sequence Analysis
+  - Quality Control
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "{{ tool_name }}"
+suite:
+  name: suite_barcode_validator
+  description: A suite of tools for DNA barcode validation
+  long_description: |
+    These tools help validate DNA barcodes by performing structural and taxonomic validation.
