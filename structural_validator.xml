@@ -8,9 +8,9 @@
     <command detect_errors="exit_code"><![CDATA[
         #if $taxonomy_source.source_type == "nsr"
             mkdir -p ./nsr_data &&
-            curl -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
+            curl -L -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
 
-            python '$__tool_directory__/barcode_validator'
+            python -m barcode_validator
             --input_file '$input_data'
             --mode structural
             --marker '$advanced.marker'
@@ -23,7 +23,7 @@
             #end if
             > '$output_tsv'
         #else
-            python '$__tool_directory__/barcode_validator'
+            python -m barcode_validator
             --input_file '$input_data'
             --mode structural
             --marker '$advanced.marker'
