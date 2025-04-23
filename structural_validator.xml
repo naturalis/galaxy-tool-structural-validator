@@ -39,7 +39,7 @@
     ]]></command>
 
     <inputs>
-        <param name="input_data" type="data" format="fasta,tabular" label="Input DNA sequences" help="FASTA file or tabular data with DNA sequences to validate" />
+        <param name="input_data" type="data" format="fasta,tsv" label="Input DNA sequences" help="FASTA file or TSV data with DNA sequences to validate" />
 
         <conditional name="taxonomy_source">
             <param name="source_type" type="select" label="Taxonomy source">
@@ -76,13 +76,19 @@
     <tests>
         <test>
             <param name="input_data" value="test_coi.fasta" />
-            <param name="source_type" value="bold" />
-            <param name="bold_taxonomy" value="test_bold_taxonomy.xlsx" />
+            <conditional name="taxonomy_source">
+                <param name="source_type" value="bold" />
+                <param name="bold_taxonomy" value="test_bold_taxonomy.xlsx" />
+            </conditional>
+            <param name="filter_invalid" value="no" />
             <output name="output_tsv" file="expected_output.tabular" />
         </test>
         <test>
             <param name="input_data" value="test_coi.tabular" />
-            <param name="source_type" value="nsr" />
+            <conditional name="taxonomy_source">
+                <param name="source_type" value="nsr" />
+            </conditional>
+            <param name="filter_invalid" value="no" />
             <output name="output_tsv" file="expected_output_nsr.tabular" />
         </test>
     </tests>
