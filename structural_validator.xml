@@ -6,12 +6,22 @@
     </requirements>
 
     <command detect_errors="exit_code"><![CDATA[
+        #set $input_with_ext = None
+        #if $input_data.is_of_type('fasta')
+            #set $input_with_ext = "input.fasta"
+        #else
+            #set $input_with_ext = "input.tsv"
+        #end if
+
+        ## Create the input file with correct extension
+        ln -sf '$input_data' '$input_with_ext' &&
+
         #if $taxonomy_source.source_type == "nsr"
             mkdir -p ./nsr_data &&
             curl -L -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
 
             python -m barcode_validator
-            --input_file '$input_data'
+            --input_file '$input_with_ext'
             --mode structural
             --marker '$advanced.marker'
             --exp_taxonomy_type nsr
@@ -24,7 +34,7 @@
             > '$output_tsv'
         #else
             python -m barcode_validator
-            --input_file '$input_data'
+            --input_file '$input_with_ext'
             --mode structural
             --marker '$advanced.marker'
             --exp_taxonomy_type bold
