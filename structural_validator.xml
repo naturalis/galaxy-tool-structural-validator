@@ -1,0 +1,157 @@
+<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.0" profile="21.05">
+    <description>Validate DNA barcode sequences structurally</description>
+    <requirements>
+        <requirement type="package" version="2.0.0">barcode-validator</requirement>
+        <requirement type="package" version="3.3.2">hmmer</requirement>
+    </requirements>
+
+    <command detect_errors="exit_code"><![CDATA[
+        #if $taxonomy_source.source_type == "nsr"
+            mkdir -p ./nsr_data &&
+            curl -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
+
+            python '$__tool_directory__/barcode_validator'
+            --input_file '$input_data'
+            --mode structural
+            --marker '$advanced.marker'
+            --exp_taxonomy_type nsr
+            --exp_taxonomy ./nsr_data/nsr.zip
+            --output_format tsv
+            --log_level '$advanced.log_level'
+            #if $filter_invalid == 'yes'
+            --triage
+            #end if
+            > '$output_tsv'
+        #else
+            python '$__tool_directory__/barcode_validator'
+            --input_file '$input_data'
+            --mode structural
+            --marker '$advanced.marker'
+            --exp_taxonomy_type bold
+            --exp_taxonomy '$taxonomy_source.bold_taxonomy'
+            --output_format tsv
+            --log_level '$advanced.log_level'
+            #if $filter_invalid == 'yes'
+            --triage
+            #end if
+            > '$output_tsv'
+        #end if
+    ]]></command>
+
+    <inputs>
+        <param name="input_data" type="data" format="fasta,tabular" label="Input DNA sequences" help="FASTA file or tabular data with DNA sequences to validate" />
+
+        <conditional name="taxonomy_source">
+            <param name="source_type" type="select" label="Taxonomy source">
+                <option value="nsr" selected="true">Dutch Species Registry (NSR)</option>
+                <option value="bold">BOLD Taxonomy</option>
+            </param>
+            <when value="bold">
+                <param name="bold_taxonomy" type="data" format="xlsx" label="BOLD Taxonomy file" help="Excel spreadsheet from BOLD containing the taxonomy" />
+            </when>
+            <when value="nsr">
+                <!-- NSR taxonomy will be automatically downloaded -->
+            </when>
+        </conditional>
+
+        <param name="filter_invalid" type="boolean" label="Filter invalid sequences" truevalue="yes" falsevalue="no" checked="false" help="If enabled, only valid sequences will be included in the output" />
+
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param name="log_level" type="select" label="Logging verbosity">
+                <option value="DEBUG">Debug</option>
+                <option value="INFO">Info</option>
+                <option value="WARNING">Warning</option>
+                <option value="ERROR" selected="true">Error</option>
+                <option value="CRITICAL">Critical</option>
+            </param>
+            <!-- Hidden parameter for marker, only COI-5P supported for now -->
+            <param name="marker" type="hidden" value="COI-5P" />
+        </section>
+    </inputs>
+
+    <outputs>
+        <data name="output_tsv" format="tabular" label="${tool.name} on ${on_string}: validated sequences" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="input_data" value="test_coi.fasta" />
+            <param name="source_type" value="bold" />
+            <param name="bold_taxonomy" value="test_bold_taxonomy.xlsx" />
+            <output name="output_tsv" file="expected_output.tabular" />
+        </test>
+        <test>
+            <param name="input_data" value="test_coi.tabular" />
+            <param name="source_type" value="nsr" />
+            <output name="output_tsv" file="expected_output_nsr.tabular" />
+        </test>
+    </tests>
+
+    <help><![CDATA[
+.. class:: infomark
+
+**What it does**
+
+This tool validates DNA barcode sequences structurally to ensure they meet quality criteria for submission to
+international barcode repositories like BOLD. It is tailored to two specific use cases:
+
+1. **BOLD Submission**: Validates sequences before submission to BOLD, ensuring they meet the required standards.
+   In this case, the assumption is that the associated specimens/samples are already registered in BOLD with an
+   acceptable taxonomic lineage attached to them. For these registered specimens/samples, a spreadsheet can be
+   exported from BOLD, which contains the taxonomic information. The tool will use this spreadsheet to validate the
+   sequences.
+2. **NSR Validation**: Validates sequences assumed to be annotated with taxonomic identification anchored on the
+   Dutch Species Registry (NSR). In this case, the input is tabular data with some hints about the taxonomic
+   identification, which is expanded into lineages using the NSR, which is downloaded on the fly.
+
+Structural validation checks:
+
+* Minimum sequence length (typically 500 bp for COI-5P)
+* Number of ambiguous bases (limited to 6 for COI-5P)
+* Presence of stop codons in protein-coding regions (typically none allowed)
+
+**Input**
+
+The tool accepts:
+
+* DNA sequences in FASTA format. If FASTA is provided, the tool assumes that the record starts with a BOLD process ID
+  (i.e. the first word or the text string up to the first '_' character). This process ID is then looked up in the
+  provided BOLD spreadsheet to find the corresponding taxon and upper lineage.
+* Tabular data with sequence information. If such data is provided, the tool will assume that the input data consists
+  of records from the core sequence cloud, and hence are anchored on the Dutch Species Registry (NSR).
+
+**Taxonomy Source**
+
+For proper validation, the tool needs a taxonomy source:
+
+* **NSR (Dutch Species Registry)**: Automatically downloaded for validation
+* **BOLD Taxonomy**: You need to provide an Excel spreadsheet from BOLD with the taxonomy
+
+**Output**
+
+The tool produces a tabular file with validation results including:
+
+* Sequence ID
+* Sequence length
+* Number of ambiguous bases
+* Detected stop codons
+* Various quality metrics
+
+When "Filter invalid sequences" is enabled, only sequences that pass all validation criteria will be included in the output.
+
+**Note**
+
+Currently only the COI-5P marker is supported. Additional markers will be added in future versions.
+    ]]></help>
+
+    <citations>
+        <citation type="bibtex">
+            @misc{barcode_validator,
+                author = {The BarCode Validator Team},
+                title = {BarCode Validator: A tool for validating DNA barcodes},
+                year = {2024},
+                url = {https://github.com/naturalis/barcode-validator}
+            }
+        </citation>
+    </citations>
+</tool>
