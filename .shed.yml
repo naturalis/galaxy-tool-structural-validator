@@ -9,8 +9,7 @@ remote_repository_url: https://github.com/naturalis/galaxy-tool-structural-valid
 homepage_url: https://github.com/naturalis/galaxy-tool-structural-validator
 type: unrestricted
 categories:
-  - Sequence Analysis
-  - Quality Control
+  - "Sequence Analysis"
 auto_tool_repositories:
   name_template: "{{ tool_id }}"
   description_template: "{{ tool_name }}"
