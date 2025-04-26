@@ -1,7 +1,7 @@
-<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.0" profile="21.05">
+<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.1" profile="21.05">
     <description>Validate DNA barcode sequences structurally</description>
     <requirements>
-        <requirement type="package" version="2.0.0">barcode-validator</requirement>
+        <requirement type="package" version="2.0.1">barcode-validator</requirement>
         <requirement type="package" version="3.3.2">hmmer</requirement>
     </requirements>
 
