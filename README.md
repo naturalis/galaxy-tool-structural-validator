@@ -32,8 +32,15 @@ planemo lint structural_validator.xml
 ```bash
 planemo test structural_validator.xml
 ```
+
 6. Publish your tool:
 
 ```bash
 planemo shed_create --shed_target toolshed
+```
+
+7. Update your tool:
+
+```bash
+planemo shed_update --shed_target toolshed
 ```
