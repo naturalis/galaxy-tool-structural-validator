@@ -1,52 +1,57 @@
-<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.1" profile="21.05">
+<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.2" profile="21.05">
     <description>Validate DNA barcode sequences structurally</description>
     <requirements>
         <requirement type="package" version="2.0.1">barcode-validator</requirement>
         <requirement type="package" version="3.3.2">hmmer</requirement>
     </requirements>
 
-    <command detect_errors="exit_code"><![CDATA[
-        #set $input_with_ext = None
-        #if $input_data.is_of_type('fasta')
-            #set $input_with_ext = "input.fasta"
-        #else
-            #set $input_with_ext = "input.tsv"
+<command detect_errors="exit_code"><![CDATA[
+    #set $input_with_ext = None
+    #if $input_data.is_of_type('fasta')
+        #set $input_with_ext = "input.fasta"
+    #else
+        #set $input_with_ext = "input.tsv"
+    #end if
+
+    ## Create the input file with correct extension
+    ln -sf '$input_data' '$input_with_ext' &&
+
+    ## Create a symlink for the bold taxonomy file with correct extension if using BOLD
+    #if $taxonomy_source.source_type == "bold"
+        ln -sf '$taxonomy_source.bold_taxonomy' 'bold_taxonomy.xlsx' &&
+    #end if
+
+    #if $taxonomy_source.source_type == "nsr"
+        mkdir -p ./nsr_data &&
+        curl -L -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
+
+        python -m barcode_validator
+        --input_file '$input_with_ext'
+        --mode structural
+        --marker '$advanced.marker'
+        --exp_taxonomy_type nsr
+        --exp_taxonomy ./nsr_data/nsr.zip
+        --output_format tsv
+        --log_level '$advanced.log_level'
+        #if $filter_invalid == 'yes'
+        --triage
         #end if
-
-        ## Create the input file with correct extension
-        ln -sf '$input_data' '$input_with_ext' &&
-
-        #if $taxonomy_source.source_type == "nsr"
-            mkdir -p ./nsr_data &&
-            curl -L -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
-
-            python -m barcode_validator
-            --input_file '$input_with_ext'
-            --mode structural
-            --marker '$advanced.marker'
-            --exp_taxonomy_type nsr
-            --exp_taxonomy ./nsr_data/nsr.zip
-            --output_format tsv
-            --log_level '$advanced.log_level'
-            #if $filter_invalid == 'yes'
-            --triage
-            #end if
-            > '$output_tsv'
-        #else
-            python -m barcode_validator
-            --input_file '$input_with_ext'
-            --mode structural
-            --marker '$advanced.marker'
-            --exp_taxonomy_type bold
-            --exp_taxonomy '$taxonomy_source.bold_taxonomy'
-            --output_format tsv
-            --log_level '$advanced.log_level'
-            #if $filter_invalid == 'yes'
-            --triage
-            #end if
-            > '$output_tsv'
+        > '$output_tsv'
+    #else
+        python -m barcode_validator
+        --input_file '$input_with_ext'
+        --mode structural
+        --marker '$advanced.marker'
+        --exp_taxonomy_type bold
+        --exp_taxonomy 'bold_taxonomy.xlsx'
+        --output_format tsv
+        --log_level '$advanced.log_level'
+        #if $filter_invalid == 'yes'
+        --triage
         #end if
-    ]]></command>
+        > '$output_tsv'
+    #end if
+]]></command>
 
     <inputs>
         <param name="input_data" type="data" format="fasta,tsv" label="Input DNA sequences" help="FASTA file or TSV data with DNA sequences to validate" />
