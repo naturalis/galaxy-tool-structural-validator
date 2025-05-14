@@ -3,12 +3,12 @@ name: Galaxy Tool CI/CD Pipeline
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'  # Push events to tags matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches: [ main, master ]
   release:
     types: [ published ]
-  tag:
-    types: [ created ]
 
 jobs:
   test:
