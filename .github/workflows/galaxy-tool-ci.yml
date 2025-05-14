@@ -39,13 +39,21 @@ jobs:
           EOF
 
       - name: Install Planemo
-        run: pip install planemo
+        run: |
+          pip install planemo
+          planemo --version
 
       - name: Lint Galaxy tool
-        run: planemo lint structural_validator.xml
+        run: |
+          set -e  # Ensure script fails on error
+          planemo lint structural_validator.xml
+          echo "Lint passed successfully"
 
       - name: Test Galaxy tool
-        run: planemo test structural_validator.xml
+        run: |
+          set -e  # Ensure script fails on error
+          planemo test structural_validator.xml
+          echo "Tests passed successfully"
 
   deploy:
     needs: test
