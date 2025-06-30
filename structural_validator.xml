@@ -1,8 +1,9 @@
-<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.3" profile="21.05">
+<tool id="barcode_validator_structural" name="DNA Barcode Structural Validator" version="0.1.4" profile="21.05">
     <description>Validate DNA barcode sequences structurally</description>
     <requirements>
-        <requirement type="package" version="2.0.2">barcode-validator</requirement>
+        <requirement type="package" version="2.0.6">barcode-validator</requirement>
         <requirement type="package" version="3.3.2">hmmer</requirement>
+        <requirement type="package" version="7.0">pytest</requirement>
     </requirements>
 
 <command detect_errors="exit_code"><![CDATA[
@@ -16,12 +17,23 @@
     ## Create the input file with correct extension
     ln -sf '$input_data' '$input_with_ext' &&
 
-    ## Create a symlink for the bold taxonomy file with correct extension if using BOLD
     #if $taxonomy_source.source_type == "bold"
+        ## Create a symlink for the bold taxonomy file with correct extension
         ln -sf '$taxonomy_source.bold_taxonomy' 'bold_taxonomy.xlsx' &&
-    #end if
 
-    #if $taxonomy_source.source_type == "nsr"
+        python -m barcode_validator
+        --input_file '$input_with_ext'
+        --mode structural
+        --marker '$advanced.marker'
+        --exp_taxonomy_type bold
+        --exp_taxonomy 'bold_taxonomy.xlsx'
+        --output_format tsv
+        --log_level '$advanced.log_level'
+        #if $filter_invalid == 'yes'
+        --triage
+        #end if
+        > '$output_tsv'
+    #elif $taxonomy_source.source_type == "nsr"
         mkdir -p ./nsr_data &&
         curl -L -s "http://api.biodiversitydata.nl/v2/taxon/dwca/getDataSet/nsr" > ./nsr_data/nsr.zip &&
 
@@ -37,13 +49,16 @@
         --triage
         #end if
         > '$output_tsv'
-    #else
+    #elif $taxonomy_source.source_type == "ncbi"
+        mkdir -p ./ncbi_data &&
+        curl -L -s "http://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz" > ./ncbi_data/taxdump.tar.gz &&
+
         python -m barcode_validator
         --input_file '$input_with_ext'
         --mode structural
         --marker '$advanced.marker'
-        --exp_taxonomy_type bold
-        --exp_taxonomy 'bold_taxonomy.xlsx'
+        --exp_taxonomy_type ncbi
+        --exp_taxonomy ./ncbi_data/taxdump.tar.gz
         --output_format tsv
         --log_level '$advanced.log_level'
         #if $filter_invalid == 'yes'
@@ -60,12 +75,16 @@
             <param name="source_type" type="select" label="Taxonomy source">
                 <option value="nsr" selected="true">Dutch Species Registry (NSR)</option>
                 <option value="bold">BOLD Taxonomy</option>
+                <option value="ncbi">NCBI Taxonomy</option>
             </param>
             <when value="bold">
                 <param name="bold_taxonomy" type="data" format="xlsx" label="BOLD Taxonomy file" help="Excel spreadsheet from BOLD containing the taxonomy" />
             </when>
             <when value="nsr">
                 <!-- NSR taxonomy will be automatically downloaded -->
+            </when>
+            <when value="ncbi">
+                <!-- NCBI taxonomy will be automatically downloaded -->
             </when>
         </conditional>
 
@@ -106,6 +125,14 @@
             <param name="filter_invalid" value="no" />
             <output name="output_tsv" file="expected_output_nsr.tabular" />
         </test>
+        <test>
+            <param name="input_data" value="test_ncbitax_coi.tabular" />
+            <conditional name="taxonomy_source">
+                <param name="source_type" value="ncbi" />
+            </conditional>
+            <param name="filter_invalid" value="no" />
+            <output name="output_tsv" file="expected_output_ncbi.tabular" />
+        </test>
     </tests>
 
     <help><![CDATA[
@@ -124,6 +151,9 @@ international barcode repositories like BOLD. It is tailored to two specific use
 2. **NSR Validation**: Validates sequences assumed to be annotated with taxonomic identification anchored on the
    Dutch Species Registry (NSR). In this case, the input is tabular data with some hints about the taxonomic
    identification, which is expanded into lineages using the NSR, which is downloaded on the fly.
+3. **NCBI Validation**: Validates sequences using the NCBI taxonomy, which is automatically downloaded from NCBI's
+   taxonomy dump. This is useful for sequences that are not registered in BOLD or NSR but need to be validated
+   against a widely accepted taxonomy.
 
 Structural validation checks:
 
@@ -145,8 +175,9 @@ The tool accepts:
 
 For proper validation, the tool needs a taxonomy source:
 
-* **NSR (Dutch Species Registry)**: Automatically downloaded for validation
 * **BOLD Taxonomy**: You need to provide an Excel spreadsheet from BOLD with the taxonomy
+* **NSR (Dutch Species Registry)**: Automatically downloaded for validation (no input required)
+* **NCBI Taxonomy**: Automatically downloaded from NCBI's taxonomy dump (no input required)
 
 **Output**
 
