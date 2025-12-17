@@ -91,4 +91,9 @@ jobs:
         run: |
           # Try to update first (for existing repositories)
           # If update fails, create the repository (first time publish)
-          planemo shed_update --shed_target toolshed || planemo shed_create --shed_target toolshed
+          if planemo shed_update --shed_target toolshed; then
+            echo "Successfully updated tool in ToolShed"
+          else
+            echo "Update failed, attempting to create tool in ToolShed (first time publish)"
+            planemo shed_create --shed_target toolshed
+          fi
